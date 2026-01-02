@@ -1,0 +1,15 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/world_grid_metered.gdshader" id="1_shader"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/base_color = Color(1, 1, 1, 1)
+shader_parameter/minor_color = Color(0.75, 0.75, 0.75, 1)
+shader_parameter/major_color = Color(0.55, 0.55, 0.55, 1)
+shader_parameter/major_step_m = 1.0
+shader_parameter/minor_divisions = 4
+shader_parameter/minor_thickness_m = 0.02
+shader_parameter/major_thickness_m = 0.04
+shader_parameter/triplanar_sharpness = 8.0

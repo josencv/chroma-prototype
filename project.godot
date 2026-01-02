@@ -11,9 +11,15 @@ config_version=5
 [application]
 
 config/name="Chroma Prototype"
-config/features=PackedStringArray("4.5", "Forward Plus")
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.5", "C#", "Forward Plus")
 config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=2520
+window/size/viewport_height=1400
 
 [dotnet]
 
-project/assembly_name="Chroma Prototype"
+project/assembly_name="ChromaPrototype"
