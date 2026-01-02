@@ -1,19 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3 uid="uid://b74qj4pt3yr2c"]
 
 [ext_resource type="Material" path="res://materials/M_GridFloor.tres" id="1_grid_mat"]
-[ext_resource type="Script" path="res://src/FollowCamera3D.cs" id="2_camera_script"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_floor"]
-size = Vector3(100, 0.1, 100)
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
-radius = 0.4
-height = 1.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
-albedo_color = Color(0.2, 0.6, 0.9, 1)
-roughness = 0.7
-metallic = 0.1
+[ext_resource type="Script" uid="uid://cerlbwnh4j7v6" path="res://src/FollowCamera3D.cs" id="2_camera_script"]
+[ext_resource type="Script" uid="uid://c0wbcmtrm48xe" path="res://src/character/CharacterController.cs" id="3_character_script"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -25,6 +14,25 @@ tonemap_mode = 2
 glow_enabled = true
 glow_intensity = 0.3
 glow_bloom = 0.1
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(100, 0.1, 100)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(100, 0.1, 100)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.2, 0.6, 0.9, 1)
+metallic = 0.1
+roughness = 0.7
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.4
+height = 1.8
 
 [node name="Main" type="Node3D"]
 
@@ -38,25 +46,30 @@ shadow_enabled = true
 shadow_bias = 0.03
 directional_shadow_mode = 1
 
-[node name="Floor" type="MeshInstance3D" parent="."]
+[node name="Floor" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
 material_override = ExtResource("1_grid_mat")
 mesh = SubResource("BoxMesh_floor")
 
-[node name="Character" type="Node3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="Character" type="CharacterBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+script = ExtResource("3_character_script")
 
 [node name="CapsuleMesh" type="MeshInstance3D" parent="Character"]
 mesh = SubResource("CapsuleMesh_1")
 surface_material_override/0 = SubResource("StandardMaterial3D_1")
 
-[node name="FollowCamera" type="Camera3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Character"]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="FollowCamera" type="Camera3D" parent="." node_paths=PackedStringArray("Target")]
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 25, 25)
+v_offset = 0.2
 fov = 25.0
 script = ExtResource("2_camera_script")
 Target = NodePath("../Character")
-Distance = 30.0
-PitchDegrees = 50.0
-YawDegrees = 0.0
-TargetOffset = Vector3(0, 0.5, 0)
-Smoothing = 8.0

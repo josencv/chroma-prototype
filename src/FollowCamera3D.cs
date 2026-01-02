@@ -28,23 +28,18 @@ public partial class FollowCamera3D : Camera3D
 
     public override void _Ready()
     {
-        // Initialize quasi-orthogonal FOV
-        Fov = 25.0f;
-
-        if (Target != null)
-        {
-            _currentPosition = CalculateDesiredPosition();
-            GlobalPosition = _currentPosition;
-            LookAtTarget();
-        }
+        _currentPosition = GlobalPosition;
+        // Set initial rotation from pitch/yaw
+        SetRotationFromAngles();
     }
 
-    public override void _PhysicsProcess(double delta)
+    public override void _Process(double delta)
     {
         if (Target == null) return;
 
         var desiredPosition = CalculateDesiredPosition();
 
+        // Smooth position movement
         if (Smoothing > 0)
         {
             _currentPosition = _currentPosition.Lerp(desiredPosition, (float)(Smoothing * delta));
@@ -55,7 +50,19 @@ public partial class FollowCamera3D : Camera3D
         }
 
         GlobalPosition = _currentPosition;
-        LookAtTarget();
+
+        // Set rotation directly from pitch/yaw instead of using LookAt
+        // This keeps the camera orientation fixed regardless of smoothing
+        SetRotationFromAngles();
+    }
+
+    private void SetRotationFromAngles()
+    {
+        var pitchRad = Mathf.DegToRad(PitchDegrees);
+        var yawRad = Mathf.DegToRad(YawDegrees);
+
+        // Build rotation from yaw (Y-axis) and pitch (X-axis), no roll
+        Rotation = new Vector3(-pitchRad, yawRad, 0);
     }
 
     private Vector3 CalculateDesiredPosition()
@@ -79,12 +86,5 @@ public partial class FollowCamera3D : Camera3D
         );
 
         return targetPos + offset;
-    }
-
-    private void LookAtTarget()
-    {
-        if (Target == null) return;
-        var lookTarget = Target.GlobalPosition + TargetOffset;
-        LookAt(lookTarget, Vector3.Up);
     }
 }
