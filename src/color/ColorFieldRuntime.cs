@@ -181,41 +181,43 @@ public partial class ColorFieldRuntime : Node
         }
         _sortBuffer.Sort((a, b) => a.distance.CompareTo(b.distance));
 
-        // Drain probes until maxTakeTotal is reached
+        // Drain ALL probes in range fully, but only store up to maxTakeTotal
         var takenPerColor = new float[LogicalColorExtensions.ColorCount];
         var totalTaken = 0f;
+        var totalStored = 0f;
         var probesDrained = 0;
         var drainedList = new List<int>();
 
         foreach (var (probeId, _) in _sortBuffer)
         {
-            if (totalTaken >= config.MaxTakeTotal)
-                break;
-
             ref var probe = ref GetProbeRef(probeId);
 
-            // Calculate how much to take from this probe
-            var maxCanTake = config.MaxTakeTotal - totalTaken;
+            // Always drain the full amount from this probe
             var available = probe.Remaining * probe.Density;
-            var take = Mathf.Min(maxCanTake, available);
 
-            if (take > 0.0001f)
+            if (available > 0.0001f)
             {
-                // Drain the probe
-                var actualDrain = take / probe.Density; // Convert back accounting for density
-                actualDrain = Mathf.Min(actualDrain, probe.Remaining);
-                probe.Remaining -= actualDrain;
-
-                takenPerColor[(int)probe.Color] += take;
-                totalTaken += take;
+                // Drain the probe completely
+                probe.Remaining = 0;
+                totalTaken += available;
                 probesDrained++;
                 drainedList.Add(probeId);
+
+                // But only store up to the cap
+                var maxCanStore = config.MaxTakeTotal - totalStored;
+                var stored = Mathf.Min(maxCanStore, available);
+
+                if (stored > 0.0001f)
+                {
+                    takenPerColor[(int)probe.Color] += stored;
+                    totalStored += stored;
+                }
             }
         }
 
         var result = new PulseResult(
             takenPerColor,
-            totalTaken,
+            totalStored,
             candidateCount,
             probesDrained,
             drainedList

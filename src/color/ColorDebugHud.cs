@@ -154,6 +154,17 @@ public partial class ColorDebugHud : Control
         text += "\n[E] to absorb";
 
         _label!.Text = text;
+
+        // Resize panel to fit content with padding
+        var textSize = _label.GetThemeFont("font").GetMultilineStringSize(
+            text,
+            HorizontalAlignment.Left,
+            -1,
+            _label.GetThemeFontSize("font_size")
+        );
+        var padding = new Vector2(20, 40);
+        _panel!.CustomMinimumSize = textSize + padding;
+        _panel.Size = _panel.CustomMinimumSize;
     }
 
     private void OnAbsorbed(float[] takenPerColor, float totalTaken)
