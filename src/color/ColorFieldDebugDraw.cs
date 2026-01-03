@@ -5,6 +5,7 @@ using Godot;
 /// <summary>
 /// Debug visualization for the color probe system.
 /// Draws probe gizmos in the 3D world.
+/// Add this as a child of any Node in your scene and it will automatically find ColorFieldRuntime.
 /// </summary>
 public partial class ColorFieldDebugDraw : Node
 {
@@ -13,6 +14,12 @@ public partial class ColorFieldDebugDraw : Node
     /// </summary>
     [Export]
     public ColorFieldRuntime? ColorField { get; set; }
+
+    /// <summary>
+    /// Whether to auto-find ColorFieldRuntime if not assigned.
+    /// </summary>
+    [Export]
+    public bool AutoFindColorField { get; set; } = true;
 
     /// <summary>
     /// Base size of probe spheres.
@@ -44,6 +51,16 @@ public partial class ColorFieldDebugDraw : Node
 
     public override void _Ready()
     {
+        // Auto-find ColorFieldRuntime if not assigned
+        if (ColorField == null && AutoFindColorField)
+        {
+            ColorField = GetTree().Root.FindChild("ColorFieldRuntime", true, false) as ColorFieldRuntime;
+            if (ColorField == null)
+            {
+                GD.PrintErr("[ColorFieldDebugDraw] ColorFieldRuntime not found!");
+            }
+        }
+
         _mesh = new ImmediateMesh();
         _meshInstance = new MeshInstance3D
         {

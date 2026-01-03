@@ -31,9 +31,8 @@ size = Vector3(100, 0.1, 100)
 [node name="ColorFieldRuntime" type="Node" parent="Systems"]
 script = ExtResource("1_jyhfs")
 
-[node name="ColorFieldDebugDraw" type="Node" parent="Systems" node_paths=PackedStringArray("ColorField")]
+[node name="ColorFieldDebugDraw" type="Node" parent="Systems"]
 script = ExtResource("2_tbgi4")
-ColorField = NodePath("../../Floor")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_1")
