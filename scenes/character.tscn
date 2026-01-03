@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://2baymesxhp8b"]
+[gd_scene load_steps=6 format=3 uid="uid://2baymesxhp8b"]
 
 [ext_resource type="Script" uid="uid://c0wbcmtrm48xe" path="res://src/character/CharacterController.cs" id="1_agfs1"]
+[ext_resource type="Script" uid="uid://b55epctiy1c3g" path="res://src/color/ColorAbsorber.cs" id="2_rkhd4"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
 radius = 0.4
@@ -24,3 +25,6 @@ surface_material_override/0 = SubResource("StandardMaterial3D_1")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_1")
+
+[node name="ColorAbsorber" type="Node3D" parent="."]
+script = ExtResource("2_rkhd4")

@@ -32,18 +32,33 @@ public partial class ColorDebugHud : Control
     [Export]
     public bool ShowInfo { get; set; } = true;
 
+    private Panel? _panel;
     private Label? _label;
     private string _lastPulseInfo = "";
     private double _pulseInfoTimer;
 
     public override void _Ready()
     {
+        // Create semi-transparent background panel
+        _panel = new Panel();
+        _panel.Position = new Vector2(5, 5);
+        _panel.CustomMinimumSize = new Vector2(300, 200);
+
+        var styleBox = new StyleBoxFlat();
+        styleBox.BgColor = new Color(0, 0, 0, 0.7f); // Semi-transparent black
+        styleBox.CornerRadiusTopLeft = 4;
+        styleBox.CornerRadiusTopRight = 4;
+        styleBox.CornerRadiusBottomLeft = 4;
+        styleBox.CornerRadiusBottomRight = 4;
+        _panel.AddThemeStyleboxOverride("panel", styleBox);
+        AddChild(_panel);
+
         _label = new Label();
         _label.Position = new Vector2(10, 10);
         _label.AddThemeColorOverride("font_color", Colors.White);
         _label.AddThemeColorOverride("font_shadow_color", Colors.Black);
         _label.AddThemeFontSizeOverride("font_size", 14);
-        AddChild(_label);
+        _panel.AddChild(_label);
 
         // Try to auto-find components
         if (Absorber == null)
@@ -85,10 +100,10 @@ public partial class ColorDebugHud : Control
 
     public override void _Process(double delta)
     {
-        if (_label == null)
+        if (_panel == null || _label == null)
             return;
 
-        _label.Visible = ShowInfo;
+        _panel.Visible = ShowInfo;
 
         if (!ShowInfo)
             return;

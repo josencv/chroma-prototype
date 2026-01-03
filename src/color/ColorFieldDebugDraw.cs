@@ -6,7 +6,7 @@ using Godot;
 /// Debug visualization for the color probe system.
 /// Draws probe gizmos in the 3D world.
 /// </summary>
-public partial class ColorFieldDebugDraw : Node3D
+public partial class ColorFieldDebugDraw : Node
 {
     /// <summary>
     /// Reference to the ColorFieldRuntime.
