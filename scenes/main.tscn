@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://b74qj4pt3yr2c"]
+[gd_scene load_steps=11 format=3 uid="uid://b74qj4pt3yr2c"]
 
 [ext_resource type="Material" path="res://materials/M_GridFloor.tres" id="1_grid_mat"]
 [ext_resource type="Script" uid="uid://cpljn6lgilpb2" path="res://src/color/ColorFieldRuntime.cs" id="1_jyhfs"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://bq2tggahksno5" path="res://src/color/ColorFieldDebugDraw.cs" id="2_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://2baymesxhp8b" path="res://scenes/character.tscn" id="3_jyhfs"]
 [ext_resource type="Script" uid="uid://bpfnvlneviyef" path="res://src/color/ColorDebugHud.cs" id="6_tefeu"]
+[ext_resource type="PackedScene" path="res://scenes/color_shapes/ColorDisk.tscn" id="7_o6xl0"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -33,6 +34,7 @@ script = ExtResource("1_jyhfs")
 
 [node name="ColorFieldDebugDraw" type="Node" parent="Systems"]
 script = ExtResource("2_tbgi4")
+CullDistance = 50.0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_1")
@@ -43,16 +45,6 @@ light_energy = 1.2
 shadow_enabled = true
 shadow_bias = 0.03
 directional_shadow_max_distance = 96.0
-
-[node name="Floor" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
-material_override = ExtResource("1_grid_mat")
-mesh = SubResource("BoxMesh_floor")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
-shape = SubResource("BoxShape3D_floor")
 
 [node name="Character" parent="." instance=ExtResource("3_jyhfs")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
@@ -76,3 +68,20 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("6_tefeu")
+
+[node name="Terrain" type="Node3D" parent="."]
+
+[node name="Floor" type="StaticBody3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Terrain/Floor"]
+material_override = ExtResource("1_grid_mat")
+mesh = SubResource("BoxMesh_floor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Terrain/Floor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="Absorbables" type="Node3D" parent="Terrain"]
+
+[node name="ColorDisk" parent="Terrain/Absorbables" instance=ExtResource("7_o6xl0")]
+ColorId = 3

@@ -47,6 +47,9 @@ public partial class ColorFieldRuntime : Node
 
     public override void _Ready()
     {
+        // Add to group so ColorShapes can find us
+        AddToGroup("color_field_runtime");
+
         _spatialHash = new SpatialHash2D(CellSize);
         ScanAndRegisterMarkers();
     }

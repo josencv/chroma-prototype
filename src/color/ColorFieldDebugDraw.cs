@@ -2,6 +2,12 @@ namespace ChromaPrototype.Color;
 
 using Godot;
 
+public enum DebugDrawMode
+{
+    Points,
+    WireSpheres
+}
+
 /// <summary>
 /// Debug visualization for the color probe system.
 /// Draws probe gizmos in the 3D world.
@@ -22,7 +28,13 @@ public partial class ColorFieldDebugDraw : Node
     public bool AutoFindColorField { get; set; } = true;
 
     /// <summary>
-    /// Base size of probe spheres.
+    /// Draw mode for probes.
+    /// </summary>
+    [Export]
+    public DebugDrawMode DrawMode { get; set; } = DebugDrawMode.Points;
+
+    /// <summary>
+    /// Base size of probe visualization.
     /// </summary>
     [Export(PropertyHint.Range, "0.1,1,0.05")]
     public float ProbeSize { get; set; } = 0.25f;
@@ -40,21 +52,33 @@ public partial class ColorFieldDebugDraw : Node
     public float MinFillScale { get; set; } = 0.3f;
 
     /// <summary>
-    /// Whether to show labels with remaining amount.
+    /// Enable spatial culling (only draw probes near camera).
     /// </summary>
     [Export]
-    public bool ShowLabels { get; set; } = false;
+    public bool UseSpatialCulling { get; set; } = true;
+
+    /// <summary>
+    /// Maximum distance from camera to draw probes.
+    /// </summary>
+    [Export(PropertyHint.Range, "5,100,5")]
+    public float CullDistance { get; set; } = 30.0f;
 
     private ImmediateMesh? _mesh;
     private MeshInstance3D? _meshInstance;
     private StandardMaterial3D? _material;
+    private Camera3D? _camera;
 
     public override void _Ready()
     {
         // Auto-find ColorFieldRuntime if not assigned
         if (ColorField == null && AutoFindColorField)
         {
-            ColorField = GetTree().Root.FindChild("ColorFieldRuntime", true, false) as ColorFieldRuntime;
+            var nodes = GetTree().GetNodesInGroup("color_field_runtime");
+            if (nodes.Count > 0)
+            {
+                ColorField = nodes[0] as ColorFieldRuntime;
+            }
+
             if (ColorField == null)
             {
                 GD.PrintErr("[ColorFieldDebugDraw] ColorFieldRuntime not found!");
@@ -75,12 +99,24 @@ public partial class ColorFieldDebugDraw : Node
             VertexColorUseAsAlbedo = true,
             Transparency = BaseMaterial3D.TransparencyEnum.Alpha
         };
+
+        if (DrawMode == DebugDrawMode.Points)
+        {
+            _material.UsePointSize = true;
+            _material.PointSize = 4.0f;
+        }
     }
 
     public override void _Process(double delta)
     {
         if (ColorField == null || _mesh == null || _material == null)
             return;
+
+        // Find camera if using spatial culling
+        if (UseSpatialCulling && _camera == null)
+        {
+            _camera = GetViewport()?.GetCamera3D();
+        }
 
         DrawProbes();
     }
@@ -93,15 +129,32 @@ public partial class ColorFieldDebugDraw : Node
         if (probes.Count == 0)
             return;
 
-        _mesh.SurfaceBegin(Mesh.PrimitiveType.Lines, _material);
+        Vector3? cameraPos = null;
+        if (UseSpatialCulling && _camera != null)
+        {
+            cameraPos = _camera.GlobalPosition;
+        }
+
+        var primitiveType = DrawMode == DebugDrawMode.Points ? Mesh.PrimitiveType.Points : Mesh.PrimitiveType.Lines;
+        _mesh.SurfaceBegin(primitiveType, _material);
+
+        var vertexCount = 0;
 
         foreach (var probe in probes)
         {
             if (!probe.HasRemaining)
                 continue;
 
+            // Spatial culling
+            if (cameraPos.HasValue)
+            {
+                var dist = probe.Position.DistanceTo(cameraPos.Value);
+                if (dist > CullDistance)
+                    continue;
+            }
+
             var color = probe.Color.ToGodotColor();
-            color.A = 0.8f * probe.FillRatio + 0.2f; // Fade out as it depletes
+            color.A = 0.8f * probe.FillRatio + 0.2f;
 
             var size = ProbeSize;
             if (ScaleByFill)
@@ -109,16 +162,35 @@ public partial class ColorFieldDebugDraw : Node
                 size *= Mathf.Lerp(MinFillScale, 1f, probe.FillRatio);
             }
 
-            DrawWireSphere(probe.Position, size, color);
+            if (DrawMode == DebugDrawMode.Points)
+            {
+                DrawPoint(probe.Position, size, color);
+                vertexCount++;
+            }
+            else
+            {
+                vertexCount += DrawWireSphere(probe.Position, size, color);
+            }
         }
 
-        _mesh.SurfaceEnd();
+        // Only end surface if we actually added vertices
+        if (vertexCount > 0)
+        {
+            _mesh.SurfaceEnd();
+        }
     }
 
-    private void DrawWireSphere(Vector3 center, float radius, Color color)
+    private void DrawPoint(Vector3 position, float size, Color color)
+    {
+        _mesh!.SurfaceSetColor(color);
+        _mesh.SurfaceAddVertex(position);
+    }
+
+    private int DrawWireSphere(Vector3 center, float radius, Color color)
     {
         const int segments = 12;
         var angleStep = Mathf.Tau / segments;
+        var vertexCount = 0;
 
         // Draw 3 circles (XY, XZ, YZ planes)
         // XZ plane (horizontal)
@@ -132,6 +204,7 @@ public partial class ColorFieldDebugDraw : Node
             _mesh.SurfaceAddVertex(p1);
             _mesh.SurfaceSetColor(color);
             _mesh.SurfaceAddVertex(p2);
+            vertexCount += 2;
         }
 
         // XY plane (vertical front)
@@ -145,6 +218,7 @@ public partial class ColorFieldDebugDraw : Node
             _mesh.SurfaceAddVertex(p1);
             _mesh.SurfaceSetColor(color);
             _mesh.SurfaceAddVertex(p2);
+            vertexCount += 2;
         }
 
         // YZ plane (vertical side)
@@ -158,19 +232,9 @@ public partial class ColorFieldDebugDraw : Node
             _mesh.SurfaceAddVertex(p1);
             _mesh.SurfaceSetColor(color);
             _mesh.SurfaceAddVertex(p2);
+            vertexCount += 2;
         }
-    }
 
-    /// <summary>
-    /// Draws a debug cylinder at the given position (for pulse visualization).
-    /// Call from external code when pulsing.
-    /// </summary>
-    public void DrawPulseCylinder(Vector3 center, float radius, float heightUp, float heightDown, Color color)
-    {
-        if (_mesh == null || _material == null)
-            return;
-
-        // This could be enhanced to show a brief visual on pulse
-        // For now, the probes themselves update their appearance
+        return vertexCount;
     }
 }

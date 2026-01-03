@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/color/shapes/ColorDisk.cs" id="1_script"]
+[ext_resource type="Script" path="res://src/color/shapes/ProbeFieldSpawner.cs" id="2_spawner"]
+
+[node name="ColorDisk" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+
+[node name="ProbeFieldSpawner" type="Node3D" parent="."]
+script = ExtResource("2_spawner")
