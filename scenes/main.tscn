@@ -1,10 +1,12 @@
-[gd_scene load_steps=11 format=3 uid="uid://b74qj4pt3yr2c"]
+[gd_scene load_steps=13 format=3 uid="uid://b74qj4pt3yr2c"]
 
 [ext_resource type="Material" path="res://materials/M_GridFloor.tres" id="1_grid_mat"]
 [ext_resource type="Script" uid="uid://cpljn6lgilpb2" path="res://src/color/ColorFieldRuntime.cs" id="1_jyhfs"]
+[ext_resource type="Resource" uid="uid://kror42ywe4m" path="res://config/color_system_settings.tres" id="2_85g3d"]
 [ext_resource type="Script" uid="uid://cerlbwnh4j7v6" path="res://src/FollowCamera3D.cs" id="2_camera_script"]
 [ext_resource type="Script" uid="uid://bq2tggahksno5" path="res://src/color/ColorFieldDebugDraw.cs" id="2_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://2baymesxhp8b" path="res://scenes/character.tscn" id="3_jyhfs"]
+[ext_resource type="Script" uid="uid://dkp6lx6uhh1e5" path="res://src/color/AbsorptionStampBuffer.cs" id="3_tipki"]
 [ext_resource type="Script" uid="uid://bpfnvlneviyef" path="res://src/color/ColorDebugHud.cs" id="6_tefeu"]
 [ext_resource type="PackedScene" path="res://scenes/color_shapes/ColorDisk.tscn" id="7_o6xl0"]
 
@@ -31,10 +33,15 @@ size = Vector3(100, 0.1, 100)
 
 [node name="ColorFieldRuntime" type="Node" parent="Systems"]
 script = ExtResource("1_jyhfs")
+Settings = ExtResource("2_85g3d")
 
 [node name="ColorFieldDebugDraw" type="Node" parent="Systems"]
 script = ExtResource("2_tbgi4")
 CullDistance = 50.0
+
+[node name="AbsorptionStampBuffer" type="Node" parent="Systems"]
+script = ExtResource("3_tipki")
+Settings = ExtResource("2_85g3d")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_1")

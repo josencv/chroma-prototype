@@ -1,11 +1,11 @@
-[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://cc6io26pxlb6g"]
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
 
-[ext_resource type="Shader" uid="uid://do2vvbscovm6u" path="res://shaders/world_grid_metered.gdshader" id="1_shader"]
+[ext_resource type="Shader" path="res://shaders/grid_surface_absorb.gdshader" id="1_shader"]
 
 [resource]
 render_priority = 0
 shader = ExtResource("1_shader")
-shader_parameter/base_color = Color(1, 0.6, 0.2, 1)
+shader_parameter/base_color = Color(1.0, 0.6, 0.2, 1)
 shader_parameter/minor_color = Color(0.85, 0.5, 0.15, 1)
 shader_parameter/major_color = Color(0.65, 0.35, 0.1, 1)
 shader_parameter/major_step_m = 1.0
@@ -13,3 +13,6 @@ shader_parameter/minor_divisions = 4
 shader_parameter/minor_thickness_m = 0.02
 shader_parameter/major_thickness_m = 0.04
 shader_parameter/triplanar_sharpness = 8.0
+shader_parameter/u_stamp_count = 0
+shader_parameter/u_recover_seconds = 4.0
+shader_parameter/u_edge_feather = 0.3

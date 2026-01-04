@@ -27,6 +27,19 @@ public partial class ColorFieldRuntime : Node
     [Export]
     public bool DebugDraw { get; set; } = true;
 
+    /// <summary>
+    /// Shared settings for recovery and visual depletion.
+    /// Create a ColorSystemSettings resource and assign it here.
+    /// </summary>
+    [Export]
+    public ColorSystemSettings? Settings { get; set; }
+
+    /// <summary>
+    /// Enable probe recovery over time.
+    /// </summary>
+    [Export]
+    public bool EnableRecovery { get; set; } = true;
+
     private readonly List<Probe> _probes = new();
     private SpatialHash2D _spatialHash = null!;
 
@@ -34,6 +47,12 @@ public partial class ColorFieldRuntime : Node
     private readonly List<int> _queryCandidates = new();
     private readonly List<int> _affectedProbes = new();
     private readonly List<(int probeId, float distance)> _sortBuffer = new();
+
+    // Reference to stamp buffer for absorption visuals
+    private AbsorptionStampBuffer? _stampBuffer;
+
+    // Cached time for recovery calculations
+    private double _lastProcessTime;
 
     /// <summary>
     /// Gets the number of probes currently registered.
@@ -52,6 +71,71 @@ public partial class ColorFieldRuntime : Node
 
         _spatialHash = new SpatialHash2D(CellSize);
         ScanAndRegisterMarkers();
+
+        // Find stamp buffer for absorption visuals
+        CallDeferred(nameof(FindStampBuffer));
+
+        _lastProcessTime = Time.GetTicksMsec() / 1000.0;
+    }
+
+    public override void _Process(double delta)
+    {
+        if (EnableRecovery)
+        {
+            ProcessRecovery(delta);
+        }
+    }
+
+    /// <summary>
+    /// Processes probe recovery over time.
+    /// </summary>
+    private void ProcessRecovery(double delta)
+    {
+        if (_probes.Count == 0)
+            return;
+
+        var recoverySeconds = Settings?.RecoverySeconds ?? 4.0f;
+        if (recoverySeconds <= 0)
+            return;
+
+        var recoveryDelay = Settings?.RecoveryDelay ?? 0.0f;
+        var currentTime = (float)(Time.GetTicksMsec() / 1000.0);
+
+        var recoveryRate = 1.0f / recoverySeconds; // Capacity per second (normalized)
+
+        for (var i = 0; i < _probes.Count; i++)
+        {
+            ref var probe = ref GetProbeRef(i);
+
+            // Skip probes that are already full
+            if (probe.Remaining >= probe.Capacity)
+                continue;
+
+            // Check if delay period has passed
+            var elapsed = currentTime - probe.LastUpdateTime;
+            if (elapsed < recoveryDelay)
+                continue;
+
+            // Recover based on delta time
+            var recovery = probe.Capacity * recoveryRate * (float)delta;
+            probe.Remaining = Mathf.Min(probe.Remaining + recovery, probe.Capacity);
+        }
+    }
+
+    /// <summary>
+    /// Finds the AbsorptionStampBuffer in the scene (deferred to ensure it exists).
+    /// </summary>
+    private void FindStampBuffer()
+    {
+        var nodes = GetTree().GetNodesInGroup("absorption_stamp_buffer");
+        if (nodes.Count > 0)
+        {
+            _stampBuffer = nodes[0] as AbsorptionStampBuffer;
+            if (DebugLogging && _stampBuffer != null)
+            {
+                GD.Print("[ColorField] Found AbsorptionStampBuffer");
+            }
+        }
     }
 
     /// <summary>
@@ -200,8 +284,9 @@ public partial class ColorFieldRuntime : Node
 
             if (available > 0.0001f)
             {
-                // Drain the probe completely
+                // Drain the probe completely and record drain time
                 probe.Remaining = 0;
+                probe.LastUpdateTime = Time.GetTicksMsec() / 1000.0;
                 totalTaken += available;
                 probesDrained++;
                 drainedList.Add(probeId);
@@ -225,6 +310,12 @@ public partial class ColorFieldRuntime : Node
             probesDrained,
             drainedList
         );
+
+        // Add visual stamp for absorption effect (only if something was drained)
+        if (probesDrained > 0)
+        {
+            _stampBuffer?.AddStampFromPulse(center, config);
+        }
 
         if (DebugLogging)
         {

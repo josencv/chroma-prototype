@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ColorSystemSettings" load_steps=2 format=3 uid="uid://kror42ywe4m"]
+
+[ext_resource type="Script" uid="uid://bxb074lkyu81y" path="res://src/color/ColorSystemSettings.cs" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+RecoverySeconds = 20.0
+RecoveryDelay = 10.0
+EdgeFeather = 0.3

@@ -11,8 +11,19 @@ using Godot;
 [GlobalClass]
 public abstract partial class ColorShapeBase : Node3D
 {
-    // Cached material paths for each color
-    private static readonly string[] MaterialPaths =
+    // Material paths for absorption shader (runtime)
+    private static readonly string[] AbsorbMaterialPaths =
+    {
+        "res://materials/color_palette/M_GridAbsorb_Red.tres",
+        "res://materials/color_palette/M_GridAbsorb_Orange.tres",
+        "res://materials/color_palette/M_GridAbsorb_Yellow.tres",
+        "res://materials/color_palette/M_GridAbsorb_Green.tres",
+        "res://materials/color_palette/M_GridAbsorb_Blue.tres",
+        "res://materials/color_palette/M_GridAbsorb_Purple.tres"
+    };
+
+    // Material paths for simple grid shader (editor preview)
+    private static readonly string[] EditorMaterialPaths =
     {
         "res://materials/color_palette/M_Grid_Red.tres",
         "res://materials/color_palette/M_Grid_Orange.tres",
@@ -23,7 +34,8 @@ public abstract partial class ColorShapeBase : Node3D
     };
 
     // Cached materials (loaded on demand)
-    private static ShaderMaterial?[]? _cachedMaterials;
+    private static ShaderMaterial?[]? _cachedAbsorbMaterials;
+    private static ShaderMaterial?[]? _cachedEditorMaterials;
 
     private LogicalColor _colorId = LogicalColor.Blue;
     private float _capacity = 10.0f;
@@ -137,6 +149,11 @@ public abstract partial class ColorShapeBase : Node3D
     /// </summary>
     protected ProbeFieldSpawner? Spawner { get; private set; }
 
+    /// <summary>
+    /// The material instance assigned to this shape (for stamp buffer registration).
+    /// </summary>
+    protected ShaderMaterial? AssignedMaterial { get; private set; }
+
     public override void _Ready()
     {
         FindChildNodes();
@@ -145,6 +162,7 @@ public abstract partial class ColorShapeBase : Node3D
         if (!Engine.IsEditorHint() && SpawnOnReady)
         {
             SpawnProbes();
+            RegisterMaterialWithStampBuffer();
         }
     }
 
@@ -198,6 +216,7 @@ public abstract partial class ColorShapeBase : Node3D
         if (material != null)
         {
             MeshNode.MaterialOverride = material;
+            AssignedMaterial = material;
         }
     }
 
@@ -213,21 +232,58 @@ public abstract partial class ColorShapeBase : Node3D
 
     /// <summary>
     /// Gets the material for a logical color (with caching).
+    /// Uses absorb materials at runtime, editor materials in editor.
     /// </summary>
     protected static ShaderMaterial? GetMaterialForColor(LogicalColor color)
     {
-        _cachedMaterials ??= new ShaderMaterial?[LogicalColorExtensions.ColorCount];
-
         var index = (int)color;
         if (index < 0 || index >= LogicalColorExtensions.ColorCount)
             return null;
 
-        if (_cachedMaterials[index] == null)
+        if (Engine.IsEditorHint())
         {
-            _cachedMaterials[index] = GD.Load<ShaderMaterial>(MaterialPaths[index]);
+            // Use simple grid materials in editor
+            _cachedEditorMaterials ??= new ShaderMaterial?[LogicalColorExtensions.ColorCount];
+            if (_cachedEditorMaterials[index] == null)
+            {
+                _cachedEditorMaterials[index] = GD.Load<ShaderMaterial>(EditorMaterialPaths[index]);
+            }
+            return _cachedEditorMaterials[index];
         }
+        else
+        {
+            // Use absorb materials at runtime
+            _cachedAbsorbMaterials ??= new ShaderMaterial?[LogicalColorExtensions.ColorCount];
+            if (_cachedAbsorbMaterials[index] == null)
+            {
+                _cachedAbsorbMaterials[index] = GD.Load<ShaderMaterial>(AbsorbMaterialPaths[index]);
+            }
+            return _cachedAbsorbMaterials[index];
+        }
+    }
 
-        return _cachedMaterials[index];
+    /// <summary>
+    /// Registers the assigned material with the stamp buffer for absorption visuals.
+    /// </summary>
+    protected void RegisterMaterialWithStampBuffer()
+    {
+        if (Engine.IsEditorHint() || AssignedMaterial == null)
+            return;
+
+        var stampBuffer = FindStampBuffer();
+        if (stampBuffer != null)
+        {
+            stampBuffer.RegisterMaterial(AssignedMaterial);
+        }
+    }
+
+    /// <summary>
+    /// Finds the AbsorptionStampBuffer in the scene.
+    /// </summary>
+    protected AbsorptionStampBuffer? FindStampBuffer()
+    {
+        var nodes = GetTree().GetNodesInGroup("absorption_stamp_buffer");
+        return nodes.Count > 0 ? nodes[0] as AbsorptionStampBuffer : null;
     }
 
     /// <summary>
